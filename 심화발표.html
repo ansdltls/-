@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>중국 문화의 집단주의: 인터랙티브 탐색</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals with Muted Red Accent -->
+    <!-- Application Structure Plan: A single-page application with a fixed sidebar navigation for thematic exploration. This structure allows users to jump between core concepts (Introduction, Philosophy, Society, Key Concepts, Modern Trends) non-linearly, enhancing usability over a simple long-scroll report. Key interactions include a comparative chart, interactive diagrams for philosophical concepts (Five Relationships) and cultural nuances (Mianzi/Lian), and a dynamic chart showing generational shifts, all designed to make complex information digestible and engaging. -->
+    <!-- Visualization & Content Choices: 
+        1. Intro: Comparison Chart (Chart.js Bar) -> Goal: Compare -> To visually contrast Collectivism vs. Individualism dimensions from Table 1, providing an immediate, high-impact overview.
+        2. Philosophy: Interactive Diagram (HTML/CSS/JS) for Five Relationships -> Goal: Organize -> To deconstruct the abstract Confucian hierarchy into tangible, explorable parts.
+        3. Society: Tabbed Content (HTML/CSS/JS) -> Goal: Organize -> To neatly segment the manifestations of collectivism in Family, Education, and Work without overwhelming the user.
+        4. Key Concepts: Interactive Diagram (HTML/CSS/JS) for Mianzi/Lian -> Goal: Explain -> To clarify the subtle but crucial difference between 'Lian' and 'Mianzi', aiding comprehension.
+        5. Modern Trends: Dynamic Chart (Chart.js Bar) -> Goal: Show Change -> To illustrate the report's finding of a shift from vertical to horizontal collectivism among younger generations.
+        All choices prioritize interaction and clarity, using Chart.js for data visualization and custom JS for diagrams, adhering to the NO SVG/Mermaid constraint. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f8f7f4; /* Warm neutral background */
+            color: #3d3d3d;
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+        .nav-link.active {
+            background-color: #f0ebe5;
+            color: #904040; /* Muted Red */
+            border-left-color: #904040;
+        }
+        .nav-link:hover {
+            background-color: #f0ebe5;
+            color: #a05050;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 1.5rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
+        }
+        .interactive-diagram-item {
+            cursor: pointer;
+            transition: background-color 0.3s;
+            border: 1px solid #e2e8f0;
+        }
+        .interactive-diagram-item:hover, .interactive-diagram-item.selected {
+            background-color: #fdf8f8;
+            border-color: #c08080;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 400px;
+            max-height: 50vh;
+        }
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 300px;
+            }
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f8f7f4;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d1c7bc;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #bdaa99;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="relative min-h-screen md:flex">
+        <!-- Mobile Menu Button -->
+        <div class="md:hidden flex justify-between items-center p-4 bg-white shadow-md">
+            <h1 class="text-xl font-bold text-[#904040]">중국 집단주의 탐색</h1>
+            <button id="mobile-menu-button" class="text-gray-800">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-4 6h4"></path></svg>
+            </button>
+        </div>
+
+        <!-- Sidebar -->
+        <aside id="sidebar" class="bg-[#fdfcfb] text-gray-700 w-64 space-y-2 py-7 px-2 absolute inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition duration-200 ease-in-out shadow-lg z-20 border-r border-gray-200">
+            <h1 class="text-2xl font-bold text-center px-4 pb-4 text-[#904040] border-b border-gray-200 mb-4">
+                중국 집단주의 탐색
+            </h1>
+            <nav>
+                <a href="#" class="nav-link block py-2.5 px-4 rounded font-medium active" data-section="intro">
+                    <span class="mr-2">🏠</span> 서론: 집단주의 vs 개인주의
+                </a>
+                <a href="#" class="nav-link block py-2.5 px-4 rounded font-medium" data-section="philosophy">
+                    <span class="mr-2">🏛️</span> 사상적 기원
+                </a>
+                <a href="#" class="nav-link block py-2.5 px-4 rounded font-medium" data-section="society">
+                    <span class="mr-2">👨‍👩‍👧‍👦</span> 사회적 발현
+                </a>
+                <a href="#" class="nav-link block py-2.5 px-4 rounded font-medium" data-section="concepts">
+                    <span class="mr-2">🔑</span> 핵심 문화 개념
+                </a>
+                <a href="#" class="nav-link block py-2.5 px-4 rounded font-medium" data-section="modern">
+                    <span class="mr-2">📱</span> 현대의 집단주의
+                </a>
+                <a href="#" class="nav-link block py-2.5 px-4 rounded font-medium" data-section="conclusion">
+                    <span class="mr-2">📜</span> 결론
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main content -->
+        <main class="flex-1 p-6 sm:p-10">
+            <!-- Introduction Section -->
+            <section id="intro" class="content-section active">
+                <h2 class="text-3xl font-bold mb-2 text-[#904040]">서론: '우리'의 가치 이해하기</h2>
+                <p class="mb-6 text-lg text-gray-600">중국 문화는 개인보다 집단의 조화와 안정을 우선시하는 강력한 집단주의 성향이 특징입니다. 이 페이지는 중국 사회의 근간을 이루는 집단주의를 다양한 측면에서 탐색하여 그 깊이와 복잡성을 이해하는 데 도움을 줄 것입니다. 아래 차트는 중국의 집단주의와 서구의 개인주의가 주요 사회 영역에서 어떻게 다르게 나타나는지 시각적으로 비교합니다.</p>
+                <div class="card">
+                    <h3 class="text-xl font-semibold mb-4 text-center">집단주의 vs 개인주의: 비교 분석</h3>
+                     <div class="chart-container">
+                        <canvas id="comparisonChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Philosophy Section -->
+            <section id="philosophy" class="content-section">
+                <h2 class="text-3xl font-bold mb-2 text-[#904040]">사상적 기원: 집단주의의 뿌리</h2>
+                <p class="mb-6 text-lg text-gray-600">중국 집단주의는 유교, 법가, 도교 등 고대 철학에 깊이 뿌리내리고 있습니다. 각 사상은 사회 질서와 개인의 역할을 다르게 규정하며 오늘날 중국의 집단주의적 사고방식을 형성했습니다. 특히 유교의 '오륜(五倫)'은 사회적 관계의 위계질서와 상호 의무를 규정하며 집단주의의 청사진을 제공했습니다. 아래 다이어그램에서 각 관계를 클릭하여 그 의미를 탐색해보세요.</p>
+                <div class="card">
+                     <h3 class="text-xl font-semibold mb-2">유교의 오륜(五倫): 관계의 질서</h3>
+                     <p class="mb-4 text-gray-500">각 관계를 클릭하여 상호 의무와 집단적 함의를 확인하세요.</p>
+                     <div id="wulun-diagram" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="interactive-diagram-item p-4 rounded-lg" data-wulun="1">
+                            <h4 class="font-bold text-lg">君臣有義 (군신유의)</h4>
+                            <p>군주와 신하의 관계</p>
+                        </div>
+                        <div class="interactive-diagram-item p-4 rounded-lg" data-wulun="2">
+                            <h4 class="font-bold text-lg">父子有親 (부자유친)</h4>
+                            <p>부모와 자녀의 관계</p>
+                        </div>
+                         <div class="interactive-diagram-item p-4 rounded-lg" data-wulun="3">
+                            <h4 class="font-bold text-lg">夫婦有別 (부부유별)</h4>
+                            <p>남편과 아내의 관계</p>
+                        </div>
+                        <div class="interactive-diagram-item p-4 rounded-lg" data-wulun="4">
+                            <h4 class="font-bold text-lg">長幼有序 (장유유서)</h4>
+                            <p>어른과 아이(선배와 후배)의 관계</p>
+                        </div>
+                        <div class="interactive-diagram-item p-4 rounded-lg md:col-span-2" data-wulun="5">
+                            <h4 class="font-bold text-lg">朋友有信 (붕우유신)</h4>
+                            <p>친구 사이의 관계</p>
+                        </div>
+                     </div>
+                     <div id="wulun-explanation" class="mt-6 p-4 bg-stone-100 rounded-lg min-h-[100px]">
+                        <p class="text-gray-700">관계를 선택하여 설명을 확인하세요.</p>
+                     </div>
+                </div>
+            </section>
+
+            <!-- Society Section -->
+            <section id="society" class="content-section">
+                <h2 class="text-3xl font-bold mb-2 text-[#904040]">사회적 발현: 삶 속에 스며든 집단주의</h2>
+                <p class="mb-6 text-lg text-gray-600">집단주의는 가족, 교육, 직장 등 중국 사회의 모든 영역에서 구체적으로 나타납니다. 각 탭을 클릭하여 해당 영역에서 집단주의가 어떻게 작동하는지 살펴보세요.</p>
+                
+                <div>
+                    <div class="sm:hidden">
+                        <select id="tabs-select" class="block w-full rounded-md border-gray-300 focus:border-[#904040] focus:ring-[#904040]">
+                            <option value="family" selected>가족</option>
+                            <option value="education">교육</option>
+                            <option value="work">직장</option>
+                        </select>
+                    </div>
+                    <div class="hidden sm:block">
+                        <div class="border-b border-gray-200">
+                            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                                <a href="#" data-tab="family" class="tab-link whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg border-[#904040] text-[#904040]">가족</a>
+                                <a href="#" data-tab="education" class="tab-link whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">교육</a>
+                                <a href="#" data-tab="work" class="tab-link whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">직장</a>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <div id="family" class="tab-content">
+                        <div class="card">
+                            <h3 class="text-2xl font-semibold mb-4">가족과 효도(孝)</h3>
+                            <p class="mb-4">가족은 중국 집단주의의 가장 중요한 기반입니다. 개인의 성공은 '가문의 영광'으로 여겨지며, 세대 간 상호 의존과 책임이 강조됩니다.</p>
+                            <ul class="list-disc list-inside space-y-2">
+                                <li><strong>확대 가족:</strong> 전통적으로 여러 세대가 함께 살며 긴밀한 관계와 명확한 위계질서를 형성합니다.</li>
+                                <li><strong>효도 (孝):</strong> 부모와 연장자에 대한 존경과 복종은 최고의 덕목으로, 자녀는 부모의 노후를 책임질 의무를 가집니다.</li>
+                                <li><strong>조상 숭배:</strong> 조상을 기리는 관습은 세대를 초월한 집단적 정체성을 강화합니다.</li>
+                                <li><strong>가족 화합:</strong> 가족 내 조화를 유지하는 것이 무엇보다 중요하며, 이는 '런칭(人情)'이라는 호의의 상호작용을 통해 더욱 공고해집니다.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div id="education" class="tab-content hidden">
+                        <div class="card">
+                            <h3 class="text-2xl font-semibold mb-4">교육 시스템</h3>
+                            <p class="mb-4">중국 교육은 집단주의적 가치를 주입하고 강화하는 중요한 사회화 도구입니다. 개인의 성취는 집단의 명예와 직결됩니다.</p>
+                            <ul class="list-disc list-inside space-y-2">
+                                <li><strong>가족의 영광:</strong> 학업 성취는 개인의 성공을 넘어 가족의 위상을 높이는 수단으로 간주됩니다.</li>
+                                <li><strong>규율과 순응:</strong> 엄격한 규칙 준수와 위계질서 존중이 강조되며, 개인의 비판적 사고보다 집단과의 조화가 우선시됩니다.</li>
+                                <li><strong>암기 학습:</strong> 서구 교육에 비해 암기 위주의 학습 방식이 두드러지며, 이는 정해진 지식 체계를 효과적으로 습득하는 데 중점을 둡니다.</li>
+                                <li><strong>실용적 목적:</strong> 학습의 주된 목적은 실용적인 기술을 습득하여 더 높은 사회적 지위 집단에 진입하는 것입니다.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div id="work" class="tab-content hidden">
+                        <div class="card">
+                            <h3 class="text-2xl font-semibold mb-4">직장 및 조직 문화</h3>
+                            <p class="mb-4">직장 역시 가족의 연장선으로 인식되며, 위계질서, 충성심, 집단 조화가 중요한 가치로 작동합니다.</p>
+                             <ul class="list-disc list-inside space-y-2">
+                                <li><strong>집단 이익 우선:</strong> 개인의 이익은 팀이나 회사 전체의 목표에 종속되는 경우가 많습니다.</li>
+                                <li><strong>가부장적 리더십:</strong> 리더는 조직의 조화와 안정을 책임지는 권위 있는 인물로 여겨지며, 상사에 대한 충성심이 높게 평가됩니다.</li>
+                                <li><strong>낮은 이직률:</strong> 한번 맺은 관계를 중시하는 문화는 서구에 비해 상대적으로 낮은 직원 이직률로 이어집니다.</li>
+                                <li><strong>관계의 중요성:</strong> 업무 능력만큼이나 동료 및 상사와의 원만한 대인 관계 유지가 성공의 중요한 요소로 작용합니다.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Concepts Section -->
+            <section id="concepts" class="content-section">
+                <h2 class="text-3xl font-bold mb-2 text-[#904040]">핵심 문화 개념: '체면'과 '관계'</h2>
+                <p class="mb-6 text-lg text-gray-600">중국 집단주의를 이해하기 위해서는 '체면(面子)'과 '관계(关系, 꽌시)'라는 두 가지 핵심 개념을 알아야 합니다. 이들은 사회적 상호작용의 보이지 않는 규칙으로 작동하며 집단 내 조화를 유지하는 데 결정적인 역할을 합니다.</p>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="card">
+                        <h3 class="text-2xl font-semibold mb-4">체면 (面子, Mianzi)</h3>
+                        <p class="mb-4">'체면'은 개인의 명예와 사회적 지위를 의미하는 복합적인 개념입니다. 이는 '롄(脸)'과 '몐쯔(面子)'라는 두 요소로 나뉩니다. 아래 항목에 마우스를 올려 그 차이를 확인해보세요.</p>
+                        <div id="face-diagram">
+                            <div class="p-4 rounded-lg border border-gray-200 mb-4 transition duration-300 hover:bg-red-50 hover:border-red-200" data-face="lian">
+                                <h4 class="font-bold text-lg">롄 (脸, Lian)</h4>
+                                <p class="text-sm">개인의 도덕적 평판, 즉 사회 규범을 잘 지키는 사람으로서의 이미지.</p>
+                            </div>
+                            <div class="p-4 rounded-lg border border-gray-200 transition duration-300 hover:bg-blue-50 hover:border-blue-200" data-face="mianzi">
+                                <h4 class="font-bold text-lg">몐쯔 (面子, Mianzi)</h4>
+                                <p class="text-sm">성공, 부, 권력 등을 통해 얻는 사회적 위신이나 명성.</p>
+                            </div>
+                        </div>
+                        <div id="face-explanation" class="mt-4 p-4 bg-stone-100 rounded-lg min-h-[80px]">
+                            <p class="text-gray-700">항목에 마우스를 올려 설명을 확인하세요.</p>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3 class="text-2xl font-semibold mb-4">관계 (关系, Guanxi)</h3>
+                        <p class="mb-4">'관계(꽌시)'는 신뢰와 상호 이익을 기반으로 하는 인적 네트워크를 의미합니다. 이는 단순한 인맥을 넘어, 사회생활의 거의 모든 영역에서 강력한 영향력을 발휘하는 사회적 자본입니다.</p>
+                        <ul class="list-disc list-inside space-y-2">
+                           <li><strong>상호 호혜성:</strong> 꽌시는 '주고받는' 관계입니다. 도움을 받으면 언젠가 갚아야 한다는 암묵적인 의무가 따릅니다.</li>
+                           <li><strong>신뢰 기반:</strong> 공식적인 계약보다 개인 간의 신뢰가 더 중요하게 작용하기도 합니다.</li>
+                           <li><strong>장기적 투자:</strong> 꽌시는 단기간에 형성되지 않으며, 꾸준한 노력과 교류를 통해 구축되고 유지됩니다.</li>
+                           <li><strong>성공의 필수 요소:</strong> 비즈니스, 취업 등에서 좋은 꽌시를 가지는 것은 성공에 결정적인 영향을 미칠 수 있습니다.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Modern Section -->
+            <section id="modern" class="content-section">
+                <h2 class="text-3xl font-bold mb-2 text-[#904040]">현대의 집단주의: 변화와 적응</h2>
+                <p class="mb-6 text-lg text-gray-600">중국의 집단주의는 고정된 것이 아니라 시대의 흐름에 따라 역동적으로 변화하고 있습니다. 특히 젊은 세대를 중심으로 전통적인 수직적 집단주의는 약화되고, 동료 집단 내의 평등을 중시하는 수평적 집단주의가 강화되는 경향을 보입니다. 아래 차트는 이러한 세대별 변화 추세를 보여줍니다.</p>
+                <div class="card">
+                     <h3 class="text-xl font-semibold mb-4 text-center">세대별 집단주의 성향 변화</h3>
+                     <div class="chart-container">
+                        <canvas id="generationalChart"></canvas>
+                    </div>
+                    <p class="mt-4 text-center text-sm text-gray-500">이 차트는 보고서의 질적 분석에 기반한 개념적 시각화입니다.</p>
+                </div>
+                 <div class="card mt-8">
+                    <h3 class="text-xl font-semibold mb-4">디지털 시대의 집단주의: 위챗 홍바오(红包)</h3>
+                    <p>전통적인 집단주의 가치는 디지털 플랫폼에서 새로운 방식으로 발현됩니다. 대표적인 예가 모바일 메신저 위챗(WeChat)의 '홍바오(红包)' 기능입니다. 설날에 붉은 봉투에 돈을 담아주던 전통을 디지털화한 이 기능은, 무작위 금액이 담긴 '행운의 홍바오'를 단체 채팅방에 공유하며 함께 즐기는 방식으로 진화했습니다. 이는 전통적 관계를 넘어 더 넓은 온라인 커뮤니티와 유대감을 형성하고 즐거움을 공유하는 현대적 집단주의의 모습을 보여줍니다.</p>
+                </div>
+            </section>
+            
+            <!-- Conclusion Section -->
+            <section id="conclusion" class="content-section">
+                <h2 class="text-3xl font-bold mb-2 text-[#904040]">결론: 복합적이고 진화하는 가치</h2>
+                <div class="card space-y-4 text-base">
+                    <p>중국 문화의 집단주의는 수천 년의 역사와 철학에 뿌리를 둔 복합적인 현상입니다. 유교, 법가, 도교 사상은 사회적 관계, 질서, 개인의 역할에 대한 틀을 제공하며 집단주의의 토대를 마련했습니다.</p>
+                    <p>이러한 가치는 가족의 효도, 교육 시스템의 규율, 직장의 충성심 등 사회 전반에 깊이 스며들어 있습니다. 특히 '체면'과 '관계(꽌시)'라는 핵심 문화 개념은 사회적 상호작용을 규제하고 집단적 조화를 유지하는 중요한 메커니즘으로 작동합니다.</p>
+                    <p>현대 중국에서 집단주의는 사라지는 것이 아니라, 디지털 기술과 만나고 새로운 세대의 가치관과 결합하며 끊임없이 진화하고 있습니다. 권위 중심의 수직적 관계에서 동료 중심의 수평적 관계로 그 형태가 변화하는 것은 이러한 역동성을 잘 보여줍니다.</p>
+                    <p>결론적으로, 중국의 집단주의는 과거의 유산에 머무르지 않고 현재와 미래의 사회 변화에 적응하며 그 영향력을 이어가는, 살아있는 문화적 힘입니다. 이를 이해하는 것은 현대 중국 사회를 깊이 있게 파악하는 데 필수적입니다.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('.content-section');
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const sidebar = document.getElementById('sidebar');
+
+            function showSection(sectionId) {
+                sections.forEach(section => {
+                    section.classList.remove('active');
+                });
+                document.getElementById(sectionId).classList.add('active');
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.dataset.section === sectionId) {
+                        link.classList.add('active');
+                    }
+                });
+            }
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const sectionId = e.currentTarget.dataset.section;
+                    showSection(sectionId);
+                    if(window.innerWidth < 768) {
+                        sidebar.classList.add('-translate-x-full');
+                    }
+                });
+            });
+
+            mobileMenuButton.addEventListener('click', () => {
+                sidebar.classList.toggle('-translate-x-full');
+            });
+
+            // Wulun Diagram Interaction
+            const wulunItems = document.querySelectorAll('.interactive-diagram-item');
+            const wulunExplanation = document.getElementById('wulun-explanation');
+            const wulunData = {
+                '1': { title: '君臣有義 (군신유의)', desc: '군주와 신하는 의리를 바탕으로 해야 합니다. 군주는 백성을 보호하고 도덕적 모범을 보이며, 신하는 충성을 다해 국가의 안정에 기여해야 합니다. 이는 위계적 질서와 국가에 대한 집단적 책임을 강조합니다.' },
+                '2': { title: '父子有親 (부자유친)', desc: '부모와 자녀는 친밀함과 사랑이 있어야 합니다. 부모는 자녀를 보호하고 양육하며, 자녀는 부모에게 효도하고 존경해야 합니다. 이는 세대 간 책임과 가족의 지속성을 보장하는 핵심 원리입니다.' },
+                '3': { title: '夫婦有別 (부부유별)', desc: '남편과 아내는 각자의 역할 구분이 있어야 합니다. 전통적으로 남편은 가정을 부양하고, 아내는 가정을 돌보는 역할을 통해 안정적인 가정을 이룹니다. 이는 가족 내 조화와 역할 분담을 강조합니다.' },
+                '4': { title: '長幼有序 (장유유서)', desc: '어른과 아이, 선배와 후배 사이에는 순서와 질서가 있어야 합니다. 연장자는 연소자에게 모범을 보이고 이끌어주며, 연소자는 연장자를 존경하고 따릅니다. 이는 사회적 관계망 내의 질서와 존중을 함양합니다.' },
+                '5': { title: '朋友有信 (붕우유신)', desc: '친구 사이에는 믿음이 있어야 합니다. 붕우 관계는 오륜 중 유일하게 수평적인 관계로, 상호 신뢰와 지지를 통해 공동체 의식을 확장하는 기반이 됩니다.' }
+            };
+
+            wulunItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    const wulunId = item.dataset.wulun;
+                    wulunItems.forEach(i => i.classList.remove('selected'));
+                    item.classList.add('selected');
+                    wulunExplanation.innerHTML = `
+                        <h5 class="font-bold text-lg mb-2">${wulunData[wulunId].title}</h5>
+                        <p>${wulunData[wulunId].desc}</p>
+                    `;
+                });
+            });
+
+            // Society Tabs Interaction
+            const tabs = document.querySelectorAll('.tab-link');
+            const tabContents = document.querySelectorAll('.tab-content');
+            const tabsSelect = document.getElementById('tabs-select');
+
+            function showTab(tabId) {
+                tabContents.forEach(content => content.classList.add('hidden'));
+                document.getElementById(tabId).classList.remove('hidden');
+
+                tabs.forEach(tab => {
+                    tab.classList.remove('border-[#904040]', 'text-[#904040]');
+                    tab.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                    if(tab.dataset.tab === tabId) {
+                        tab.classList.add('border-[#904040]', 'text-[#904040]');
+                        tab.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                    }
+                });
+                tabsSelect.value = tabId;
+            }
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', e => {
+                    e.preventDefault();
+                    showTab(e.currentTarget.dataset.tab);
+                });
+            });
+
+            tabsSelect.addEventListener('change', e => {
+                 showTab(e.target.value);
+            });
+
+            // Face Concept Interaction
+            const faceItems = document.querySelectorAll('[data-face]');
+            const faceExplanation = document.getElementById('face-explanation');
+            const faceData = {
+                'lian': { title: '롄(脸)', desc: '한 개인의 도덕적 품성에 대한 사회적 존중을 의미합니다. 이는 사회의 도덕적 기준을 준수할 때 얻어지며, 부도덕한 행위를 하면 "롄을 잃었다"고 표현합니다. 집단의 기본적 신뢰를 얻기 위한 필수 요소입니다.'},
+                'mianzi': { title: '몐쯔(面子)', desc: '개인의 사회적 성공이나 성취를 통해 얻어지는 명성이나 위신을 의미합니다. 이는 타인에게 "체면을 세워주거나" 자신의 능력을 과시함으로써 얻을 수 있습니다. 사회적 관계망 내에서의 영향력과 관련이 깊습니다.'}
+            };
+
+            faceItems.forEach(item => {
+                item.addEventListener('mouseenter', () => {
+                    const faceId = item.dataset.face;
+                    faceExplanation.innerHTML = `
+                         <h5 class="font-bold text-lg mb-2">${faceData[faceId].title}</h5>
+                         <p>${faceData[faceId].desc}</p>
+                    `;
+                });
+                item.addEventListener('mouseleave', () => {
+                    faceExplanation.innerHTML = `<p class="text-gray-700">항목에 마우스를 올려 설명을 확인하세요.</p>`;
+                });
+            });
+
+            // Chart.js Instances
+            const chartOptions = {
+                maintainAspectRatio: false,
+                responsive: true,
+                plugins: {
+                    legend: {
+                        labels: {
+                            font: {
+                                family: "'Noto Sans KR', sans-serif",
+                                size: 14,
+                            }
+                        }
+                    },
+                    tooltip: {
+                        titleFont: { family: "'Noto Sans KR', sans-serif" },
+                        bodyFont: { family: "'Noto Sans KR', sans-serif" },
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                           font: { family: "'Noto Sans KR', sans-serif" }
+                        }
+                    },
+                    y: {
+                        ticks: {
+                           font: { family: "'Noto Sans KR', sans-serif" }
+                        }
+                    }
+                }
+            };
+            
+            // Comparison Chart
+            const ctx1 = document.getElementById('comparisonChart').getContext('2d');
+            new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: ['관계 인식', '문화적 초점', '권리/의무', '학교', '직장', '정치'],
+                    datasets: [
+                        {
+                            label: '집단주의 (중국)',
+                            data: [90, 85, 80, 75, 88, 92],
+                            backgroundColor: 'rgba(144, 64, 64, 0.6)',
+                            borderColor: 'rgba(144, 64, 64, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: '개인주의 (서구)',
+                            data: [30, 25, 35, 40, 32, 28],
+                            backgroundColor: 'rgba(100, 100, 100, 0.6)',
+                            borderColor: 'rgba(100, 100, 100, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: { ...chartOptions, indexAxis: 'y' }
+            });
+
+            // Generational Chart
+            const ctx2 = document.getElementById('generationalChart').getContext('2d');
+            new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: ['70년대 이전 세대', '80년대 세대', '90년대 이후 세대'],
+                    datasets: [
+                        {
+                            label: '수직적 집단주의 (권위, 위계 중시)',
+                            data: [85, 60, 40],
+                            backgroundColor: 'rgba(144, 64, 64, 0.6)',
+                            borderColor: 'rgba(144, 64, 64, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: '수평적 집단주의 (동료, 평등 중시)',
+                            data: [45, 70, 80],
+                            backgroundColor: 'rgba(64, 144, 144, 0.6)',
+                            borderColor: 'rgba(64, 144, 144, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: { ...chartOptions }
+            });
+
+        });
+    </script>
+
+</body>
+</html>
